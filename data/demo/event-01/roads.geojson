@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"id":"R1","u":1,"v":2,"name":"North-South Link A"},"geometry":{"type":"LineString","coordinates":[[0,0],[1,0]]}},
+    {"type":"Feature","properties":{"id":"R2","u":2,"v":3,"name":"North-South Link B"},"geometry":{"type":"LineString","coordinates":[[1,0],[2,0]]}},
+    {"type":"Feature","properties":{"id":"R3","u":4,"v":5,"name":"Middle Link A"},"geometry":{"type":"LineString","coordinates":[[0,1],[1,1]]}},
+    {"type":"Feature","properties":{"id":"R4","u":5,"v":6,"name":"Middle Link B"},"geometry":{"type":"LineString","coordinates":[[1,1],[2,1]]}},
+    {"type":"Feature","properties":{"id":"R5","u":7,"v":8,"name":"South Link A"},"geometry":{"type":"LineString","coordinates":[[0,2],[1,2]]}},
+    {"type":"Feature","properties":{"id":"R6","u":8,"v":9,"name":"South Link B"},"geometry":{"type":"LineString","coordinates":[[1,2],[2,2]]}},
+    {"type":"Feature","properties":{"id":"R7","u":1,"v":4,"name":"West Connector A"},"geometry":{"type":"LineString","coordinates":[[0,0],[0,1]]}},
+    {"type":"Feature","properties":{"id":"R8","u":4,"v":7,"name":"West Connector B"},"geometry":{"type":"LineString","coordinates":[[0,1],[0,2]]}},
+    {"type":"Feature","properties":{"id":"R9","u":2,"v":5,"name":"Central Connector A"},"geometry":{"type":"LineString","coordinates":[[1,0],[1,1]]}},
+    {"type":"Feature","properties":{"id":"R10","u":5,"v":8,"name":"Central Connector B"},"geometry":{"type":"LineString","coordinates":[[1,1],[1,2]]}},
+    {"type":"Feature","properties":{"id":"R11","u":3,"v":6,"name":"East Connector A"},"geometry":{"type":"LineString","coordinates":[[2,0],[2,1]]}},
+    {"type":"Feature","properties":{"id":"R12","u":6,"v":9,"name":"East Connector B"},"geometry":{"type":"LineString","coordinates":[[2,1],[2,2]}}
+  ]
+}
