@@ -12,9 +12,14 @@ from pydantic import BaseModel
 from backend.geospatial.impact import affected_roads
 from backend.network.graph import remove_affected_edges, road_graph
 from backend.network.isolation import potentially_isolated
-from backend.satellite.sentinel1 import process_sentinel1, search_sentinel1, select_before_after
+from backend.satellite.sentinel1 import (
+    process_scene,
+    process_sentinel1,
+    search_sentinel1,
+    select_before_after,
+)
 
-app = FastAPI(title="FloodLens AI API", version="0.3.0")
+app = FastAPI(title="FloodLens AI API", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,9 +35,34 @@ DEMO_ROOT = ROOT / "data" / "demo"
 
 class AnalyzeRequest(BaseModel):
     event_id: str = "event-01"
-    before: str | None = None
-    after: str | None = None
-    bbox: list[float] | None = None
+
+
+class SatelliteSearchRequest(BaseModel):
+    bbox: list[float]
+    start: str
+    end: str
+
+
+class SatellitePairRequest(BaseModel):
+    bbox: list[float]
+    start: str
+    end: str
+    event_time: str
+
+
+class SatelliteProcessRequest(BaseModel):
+    bbox: list[float]
+    start: str
+    end: str
+    width: int = 512
+    height: int = 512
+
+
+class SatelliteSceneRequest(BaseModel):
+    bbox: list[float]
+    acquisition_time: str
+    width: int = 512
+    height: int = 512
 
 
 def load_demo(event_id: str):
@@ -56,54 +86,79 @@ def health():
 
 
 @app.post("/api/satellite/search")
-def satellite_search(request: AnalyzeRequest):
-    if not request.bbox or not request.before or not request.after:
-        raise HTTPException(
-            status_code=400,
-            detail="bbox, before, and after are required for satellite search.",
-        )
+def satellite_search(request: SatelliteSearchRequest):
     try:
-        return search_sentinel1(request.bbox, request.before, request.after)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Sentinel-1 search failed: {exc}") from exc
-
-
-@app.post("/api/satellite/pair")
-def satellite_pair(request: AnalyzeRequest):
-    if not request.bbox or not request.before or not request.after:
-        raise HTTPException(
-            status_code=400,
-            detail="bbox, before, and after are required for satellite pair selection.",
-        )
-    try:
-        results = search_sentinel1(request.bbox, request.before, request.after, limit=100)
-        features = results.get("features", [])
-        event_time = request.after
-        return select_before_after(features, event_time)
+        return search_sentinel1(request.bbox, request.start, request.end)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Sentinel-1 pair selection failed: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Sentinel-1 search failed: {exc}") from exc
+
+
+@app.post("/api/satellite/pair")
+def satellite_pair(request: SatellitePairRequest):
+    try:
+        results = search_sentinel1(
+            request.bbox,
+            request.start,
+            request.end,
+            limit=100,
+        )
+        return select_before_after(results.get("features", []), request.event_time)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Sentinel-1 pair selection failed: {exc}",
+        ) from exc
 
 
 @app.post("/api/satellite/process")
-def satellite_process(request: AnalyzeRequest):
-    if not request.bbox or not request.before or not request.after:
-        raise HTTPException(
-            status_code=400,
-            detail="bbox, before, and after are required for satellite processing.",
-        )
+def satellite_process(request: SatelliteProcessRequest):
     try:
-        content = process_sentinel1(request.bbox, request.before, request.after)
+        content = process_sentinel1(
+            request.bbox,
+            request.start,
+            request.end,
+            request.width,
+            request.height,
+        )
         return Response(content=content, media_type="image/tiff")
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Sentinel-1 processing failed: {exc}") from exc
+        raise HTTPException(
+            status_code=502,
+            detail=f"Sentinel-1 processing failed: {exc}",
+        ) from exc
+
+
+@app.post("/api/satellite/scene")
+def satellite_scene(request: SatelliteSceneRequest):
+    try:
+        content = process_scene(
+            request.bbox,
+            request.acquisition_time,
+            request.width,
+            request.height,
+        )
+        return Response(content=content, media_type="image/tiff")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Sentinel-1 scene processing failed: {exc}",
+        ) from exc
 
 
 @app.post("/api/analyze")
@@ -134,13 +189,15 @@ def analyze(request: AnalyzeRequest):
     affected_bridge_records = []
     for row in bridges.itertuples():
         if row.geometry.intersects(flood_union):
-            affected_bridge_records.append({
-                "id": row.id,
-                "name": row.name,
-                "road_id": row.road_id,
-                "status": "potentially_affected",
-                "reason": "bridge geometry intersects detected flood extent",
-            })
+            affected_bridge_records.append(
+                {
+                    "id": row.id,
+                    "name": row.name,
+                    "road_id": row.road_id,
+                    "status": "potentially_affected",
+                    "reason": "bridge geometry intersects detected flood extent",
+                }
+            )
 
     isolated_ids = [
         item["community_id"]
