@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"id":"B1","name":"Central Bridge","road_id":"R9","bridge":true},"geometry":{"type":"LineString","coordinates":[[1,0.45],[1,0.55]]}}]}
