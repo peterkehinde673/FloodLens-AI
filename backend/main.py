@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from backend.geospatial.impact import affected_roads
 from backend.network.graph import remove_affected_edges, road_graph
 from backend.network.isolation import potentially_isolated
+from backend.satellite.sentinel1 import search_sentinel1
 
 app = FastAPI(title="FloodLens AI API", version="0.3.0")
 
@@ -51,6 +52,21 @@ def load_demo(event_id: str):
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "floodlens-api", "version": app.version}
+
+
+@app.post("/api/satellite/search")
+def satellite_search(request: AnalyzeRequest):
+    if not request.bbox or not request.before or not request.after:
+        raise HTTPException(
+            status_code=400,
+            detail="bbox, before, and after are required for satellite search.",
+        )
+    try:
+        return search_sentinel1(request.bbox, request.before, request.after)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Sentinel-1 search failed: {exc}") from exc
 
 
 @app.post("/api/analyze")
