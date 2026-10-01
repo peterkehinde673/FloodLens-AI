@@ -119,3 +119,37 @@ def process_sentinel1(bbox: list[float], start: str, end: str, width: int = 512,
     )
     response.raise_for_status()
     return response.content
+
+
+def _item_datetime(item: dict[str, Any]) -> datetime:
+    value = item.get("properties", {}).get("datetime") or item.get("properties", {}).get("start_datetime")
+    if not value:
+        raise ValueError("Sentinel-1 catalog item has no acquisition datetime")
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def select_before_after(features: list[dict[str, Any]], event_time: str) -> dict[str, Any]:
+    """Choose nearest pre-event and post-event acquisitions from Catalog features."""
+    if not features:
+        raise ValueError("No Sentinel-1 acquisitions were returned for the requested window")
+
+    event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
+    if event_dt.tzinfo is None:
+        event_dt = event_dt.replace(tzinfo=timezone.utc)
+    event_dt = event_dt.astimezone(timezone.utc)
+
+    dated = [(item, _item_datetime(item)) for item in features]
+    before = [pair for pair in dated if pair[1] < event_dt]
+    after = [pair for pair in dated if pair[1] >= event_dt]
+
+    if not before or not after:
+        raise ValueError("Catalog results must contain at least one acquisition before and after the event time")
+
+    before_item, before_dt = max(before, key=lambda pair: pair[1])
+    after_item, after_dt = min(after, key=lambda pair: pair[1])
+
+    return {
+        "before": {"id": before_item.get("id"), "datetime": before_dt.isoformat(), "item": before_item},
+        "after": {"id": after_item.get("id"), "datetime": after_dt.isoformat(), "item": after_item},
+        "gap_hours": round((after_dt - before_dt).total_seconds() / 3600, 2),
+    }
