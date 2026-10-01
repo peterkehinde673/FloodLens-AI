@@ -6,12 +6,13 @@ from pathlib import Path
 import geopandas as gpd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from backend.geospatial.impact import affected_roads
 from backend.network.graph import remove_affected_edges, road_graph
 from backend.network.isolation import potentially_isolated
-from backend.satellite.sentinel1 import search_sentinel1
+from backend.satellite.sentinel1 import process_sentinel1, search_sentinel1
 
 app = FastAPI(title="FloodLens AI API", version="0.3.0")
 
@@ -67,6 +68,22 @@ def satellite_search(request: AnalyzeRequest):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Sentinel-1 search failed: {exc}") from exc
+
+
+@app.post("/api/satellite/process")
+def satellite_process(request: AnalyzeRequest):
+    if not request.bbox or not request.before or not request.after:
+        raise HTTPException(
+            status_code=400,
+            detail="bbox, before, and after are required for satellite processing.",
+        )
+    try:
+        content = process_sentinel1(request.bbox, request.before, request.after)
+        return Response(content=content, media_type="image/tiff")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Sentinel-1 processing failed: {exc}") from exc
 
 
 @app.post("/api/analyze")
