@@ -1,0 +1,116 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import maplibregl, { GeoJSONSource } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+type Props = {
+  flood: GeoJSON.FeatureCollection;
+  roads: GeoJSON.FeatureCollection;
+  communities: GeoJSON.FeatureCollection;
+  bridges: GeoJSON.FeatureCollection;
+  isolated: Set<string>;
+};
+
+export default function FloodMap({ flood, roads, communities, bridges, isolated }: Props) {
+  const container = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!container.current) return;
+
+    const map = new maplibregl.Map({
+      container: container.current,
+      style: "https://demotiles.maplibre.org/style.json",
+      center: [1, 1],
+      zoom: 5.4,
+      attributionControl: true,
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+    map.on("load", () => {
+      const isolatedFeatures = {
+        type: "FeatureCollection",
+        features: communities.features.filter((feature) => {
+          const id = String(feature.properties?.id ?? "");
+          return isolated.has(id);
+        }),
+      } as GeoJSON.FeatureCollection;
+
+      map.addSource("flood", { type: "geojson", data: flood });
+      map.addSource("roads", { type: "geojson", data: roads });
+      map.addSource("communities", { type: "geojson", data: communities });
+      map.addSource("bridges", { type: "geojson", data: bridges });
+      map.addSource("isolated", { type: "geojson", data: isolatedFeatures });
+
+      map.addLayer({
+        id: "flood-fill",
+        type: "fill",
+        source: "flood",
+        paint: { "fill-color": "#38bdf8", "fill-opacity": 0.38 },
+      });
+
+      map.addLayer({
+        id: "roads-line",
+        type: "line",
+        source: "roads",
+        paint: { "line-color": "#64748b", "line-width": 3 },
+      });
+
+      map.addLayer({
+        id: "roads-affected",
+        type: "line",
+        source: "roads",
+        filter: ["==", ["get", "status"], "potentially_affected"],
+        paint: { "line-color": "#fb7185", "line-width": 6 },
+      });
+
+      map.addLayer({
+        id: "bridges-line",
+        type: "line",
+        source: "bridges",
+        paint: { "line-color": "#f59e0b", "line-width": 7 },
+      });
+
+      map.addLayer({
+        id: "communities-points",
+        type: "circle",
+        source: "communities",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": "#e2e8f0",
+          "circle-stroke-color": "#0f172a",
+          "circle-stroke-width": 2,
+        },
+      });
+
+      map.addLayer({
+        id: "isolated-points",
+        type: "circle",
+        source: "isolated",
+        paint: {
+          "circle-radius": 9,
+          "circle-color": "#ef4444",
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 2,
+        },
+      });
+
+      map.on("click", "communities-points", (event) => {
+        const feature = event.features?.[0];
+        if (!feature) return;
+        new maplibregl.Popup()
+          .setLngLat(event.lngLat)
+          .setHTML("<strong>" + String(feature.properties?.name ?? "Community") + "</strong>")
+          .addTo(map);
+      });
+
+      map.on("mouseenter", "communities-points", () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", "communities-points", () => { map.getCanvas().style.cursor = ""; });
+    });
+
+    return () => map.remove();
+  }, [flood, roads, communities, bridges, isolated]);
+
+  return <div ref={container} className="absolute inset-0" />;
+}
