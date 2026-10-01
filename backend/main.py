@@ -7,11 +7,15 @@ import geopandas as gpd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from rasterio.features import shapes
+from rasterio.io import MemoryFile
+from shapely.geometry import shape
 from pydantic import BaseModel
 
 from backend.geospatial.impact import affected_roads
 from backend.network.graph import remove_affected_edges, road_graph
 from backend.network.isolation import potentially_isolated
+from backend.vision.baseline import flood_change_mask_linear
 from backend.satellite.sentinel1 import (
     process_scene,
     process_sentinel1,
