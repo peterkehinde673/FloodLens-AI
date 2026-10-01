@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import FloodMap from "@/components/FloodMap";
 import {
   Activity,
   BrainCircuit,
@@ -16,6 +17,10 @@ type Analysis = {
   affected_bridges: Array<{ id: string; name: string; status: string; reason: string }>;
   isolated_communities: string[];
   community_analysis: Array<{ community_id: string; potentially_isolated: boolean; reason?: string }>;
+  flood: GeoJSON.FeatureCollection;
+  roads: GeoJSON.FeatureCollection;
+  communities: GeoJSON.FeatureCollection;
+  bridges: GeoJSON.FeatureCollection;
 };
 
 const initialStats = [
@@ -30,6 +35,7 @@ export default function Home() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isolated = new Set(analysis?.isolated_communities ?? []);
 
   async function analyzeEvent() {
     setLoading(true);
@@ -96,7 +102,10 @@ export default function Home() {
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center p-6">
-              <div className="w-full max-w-xl">
+              {analysis ? (
+                <FloodMap flood={analysis.flood} roads={analysis.roads} communities={analysis.communities} bridges={analysis.bridges} isolated={isolated} />
+              ) : null}
+              {!analysis && <div className="w-full max-w-xl">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
                   <BrainCircuit />
                 </div>
@@ -118,7 +127,7 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
 
             <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-2">
