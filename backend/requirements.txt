@@ -8,4 +8,5 @@ networkx
 pydantic
 python-dotenv
 httpx
+rtree
 pytest
