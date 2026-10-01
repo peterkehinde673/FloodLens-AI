@@ -22,7 +22,7 @@ from backend.satellite.sentinel1 import (
 )
 from backend.vision.baseline import dual_polarization_flood_mask
 
-app = FastAPI(title="FloodLens AI API", version="0.5.0")
+app = FastAPI(title="FloodLens AI API", version="0.6.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -75,6 +75,7 @@ class LiveAnalyzeRequest(SatellitePairRequest):
     vh_threshold_db: float = -2.0
     min_pixels: int = 9
     road_threshold: float = 0.25
+    safe_nodes: list[int] = []
 
 
 def load_demo(event_id: str):
@@ -107,20 +108,18 @@ def _geojson_features_from_mask(mask, transform, crs):
                     "geometry": shape(geometry).__geo_interface__,
                 }
             )
-    return gpd.GeoDataFrame.from_features(
-        features,
-        crs=crs,
-    ) if features else gpd.GeoDataFrame(
+
+    if features:
+        return gpd.GeoDataFrame.from_features(features, crs=crs)
+
+    return gpd.GeoDataFrame(
         {"class": [], "geometry": []},
         geometry="geometry",
         crs=crs,
     )
 
 
-def _process_pair_to_flood(
-    request: LiveAnalyzeRequest,
-    pair: dict,
-):
+def _process_pair_to_flood(request: LiveAnalyzeRequest, pair: dict):
     before_content = process_scene(
         request.bbox,
         pair["before"]["datetime"],
@@ -137,7 +136,9 @@ def _process_pair_to_flood(
     with MemoryFile(before_content) as before_mem:
         with before_mem.open() as before_ds:
             if before_ds.count < 3:
-                raise ValueError("Sentinel-1 response must contain VV, VH, and dataMask bands")
+                raise ValueError(
+                    "Sentinel-1 response must contain VV, VH, and dataMask bands"
+                )
             before = before_ds.read([1, 2, 3]).astype("float32")
             transform = before_ds.transform
             crs = before_ds.crs
@@ -145,7 +146,9 @@ def _process_pair_to_flood(
     with MemoryFile(after_content) as after_mem:
         with after_mem.open() as after_ds:
             if after_ds.count < 3:
-                raise ValueError("Sentinel-1 response must contain VV, VH, and dataMask bands")
+                raise ValueError(
+                    "Sentinel-1 response must contain VV, VH, and dataMask bands"
+                )
             after = after_ds.read([1, 2, 3]).astype("float32")
 
     if before.shape != after.shape:
@@ -310,7 +313,7 @@ def osm_aoi(request: SatelliteProcessRequest):
 
 @app.post("/api/satellite/live-analyze")
 def satellite_live_analyze(request: LiveAnalyzeRequest):
-    """Run live Sentinel-1 flood detection through infrastructure impact analysis."""
+    """Run live Sentinel-1 flood detection plus OSM infrastructure analysis."""
     try:
         results = search_sentinel1(
             request.bbox,
@@ -335,18 +338,59 @@ def satellite_live_analyze(request: LiveAnalyzeRequest):
                 "community_analysis": [],
             }
 
-        # Live geospatial layers are expected to be supplied by the caller for the
-        # selected AOI in the next iteration. Keep this endpoint explicit rather
-        # than silently inventing OSM/community data.
+        roads, bridges, communities = fetch_osm_aoi(request.bbox)
+
+        if roads.empty:
+            return {
+                "status": "live_flood_detection_complete",
+                "warning": "Flood extent was detected, but OSM returned no roads for this AOI.",
+                "before": pair["before"],
+                "after": pair["after"],
+                "gap_hours": pair["gap_hours"],
+                "diagnostics": diagnostics,
+                "flood": json.loads(flood.to_json()),
+                "roads": json.loads(roads.to_json()),
+                "bridges": json.loads(bridges.to_json()),
+                "communities": json.loads(communities.to_json()),
+                "affected_roads": [],
+                "affected_bridges": [],
+                "isolated_communities": [],
+                "community_analysis": [],
+            }
+
+        analysis = analyze_flood_extent(
+            flood,
+            roads,
+            communities,
+            bridges,
+            safe_nodes=request.safe_nodes,
+            road_threshold=request.road_threshold,
+        )
+
+        isolation_warning = (
+            None
+            if request.safe_nodes
+            else "Potential isolation was not evaluated because no safe road nodes were configured."
+        )
+
         return {
-            "status": "live_flood_detection_complete",
-            "message": "Live Sentinel-1 flood detection is complete. Infrastructure analysis requires AOI-specific roads, bridges, and communities.",
+            "status": "live_analysis_complete",
+            "warning": "Flood extent is a VV/VH change-detection baseline. OSM coverage and road connectivity are not proof of physical damage or complete isolation.",
+            "isolation_warning": isolation_warning,
             "before": pair["before"],
             "after": pair["after"],
             "gap_hours": pair["gap_hours"],
             "diagnostics": diagnostics,
             "flood": json.loads(flood.to_json()),
-            "next_step": "POST the flood GeoJSON with AOI infrastructure layers to the geospatial analysis service.",
+            "roads": json.loads(analysis["affected_roads"].to_json()),
+            "affected_roads": json.loads(analysis["affected_roads"].to_json())["features"],
+            "bridges": json.loads(bridges.to_json()),
+            "affected_bridges": analysis["affected_bridges"],
+            "communities": json.loads(analysis["communities"].to_json()),
+            "isolated_communities": analysis["isolated_communities"],
+            "community_analysis": analysis["community_analysis"],
+            "flood_area_km2": analysis["flood_area_km2"],
+            "safe_nodes": request.safe_nodes,
         }
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
