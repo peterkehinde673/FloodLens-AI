@@ -221,7 +221,7 @@ def build_process_request(
                     "type": COLLECTION,
                     "dataFilter": {
                         "timeRange": {"from": interval[0], "to": interval[1]},
-                        "acquisitionMode": "IW",
+                        "acquisitionMode": "IW",\n                        "polarization": "DV",
                     },
                     "processing": {
                         "orthorectify": "true",
