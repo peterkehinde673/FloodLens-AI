@@ -1,0 +1,8 @@
+{
+  "id": "event-01",
+  "name": "FloodLens synthetic connectivity demo",
+  "type": "synthetic",
+  "description": "Small deterministic scenario used to validate flood-to-road impact and potential isolation logic before live satellite processing is connected.",
+  "safe_nodes": [1],
+  "crs": "EPSG:4326"
+}
