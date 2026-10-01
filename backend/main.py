@@ -5,6 +5,7 @@ from pathlib import Path
 
 import geopandas as gpd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from backend.geospatial.impact import affected_roads
@@ -12,6 +13,14 @@ from backend.network.graph import remove_affected_edges, road_graph
 from backend.network.isolation import potentially_isolated
 
 app = FastAPI(title="FloodLens AI API", version="0.2.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEMO_ROOT = ROOT / "data" / "demo"
