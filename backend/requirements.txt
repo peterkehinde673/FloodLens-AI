@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+numpy
+rasterio
+geopandas
+shapely
+networkx
+pydantic
+python-dotenv
