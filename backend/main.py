@@ -99,6 +99,10 @@ def analyze(request: AnalyzeRequest):
         "affected_bridges": affected_bridge_records,
         "isolated_communities": isolated_ids,
         "community_analysis": isolation,
+        "flood": json.loads(flood.to_json()),
+        "roads": json.loads(impacted.to_json()),
+        "communities": json.loads(communities.to_json()),
+        "bridges": json.loads(bridges.to_json()),
         "evidence": {
             "flood_source": "demo/flood.geojson",
             "road_source": "demo/roads.geojson",
