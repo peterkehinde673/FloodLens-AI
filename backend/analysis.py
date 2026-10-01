@@ -63,10 +63,18 @@ def analyze_flood_extent(
         for row in communities.itertuples()
         if row.node is not None
     ]
-    isolation = potentially_isolated(
-        post_flood_graph,
-        records,
-        safe_nodes=safe_nodes,
+
+    # Isolation is only meaningful when the caller explicitly defines a safe
+    # network. An empty safe-node set must never classify every community as
+    # isolated.
+    isolation = (
+        potentially_isolated(
+            post_flood_graph,
+            records,
+            safe_nodes=safe_nodes,
+        )
+        if safe_nodes
+        else []
     )
 
     flood_area_km2 = round(
