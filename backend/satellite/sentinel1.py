@@ -69,7 +69,9 @@ def _access_token() -> str:
     payload = response.json()
     token = payload.get("access_token")
     if not token:
-        raise RuntimeError("Copernicus authentication response did not contain access_token.")
+        raise RuntimeError(
+            "Copernicus authentication response did not contain access_token."
+        )
 
     _token_cache["access_token"] = token
     _token_cache["expires_at"] = now + int(payload.get("expires_in", 3600))
@@ -95,7 +97,9 @@ def _item_datetime(item: dict[str, Any]) -> datetime:
     value = properties.get("datetime") or properties.get("start_datetime")
     if not value:
         raise ValueError("Sentinel-1 catalog item has no acquisition datetime")
-    return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(timezone.utc)
+    return datetime.fromisoformat(
+        str(value).replace("Z", "+00:00")
+    ).astimezone(timezone.utc)
 
 
 def _property(item: dict[str, Any], name: str) -> Any:
@@ -120,7 +124,9 @@ def _pair_compatibility_score(
     if relative_before is not None and relative_before == relative_after:
         score += 2
 
-    gap_hours = abs((_item_datetime(after) - _item_datetime(before)).total_seconds()) / 3600
+    gap_hours = abs(
+        (_item_datetime(after) - _item_datetime(before)).total_seconds()
+    ) / 3600
     return score, -gap_hours
 
 
@@ -130,7 +136,9 @@ def select_before_after(
     """Choose a compatible pre-event/post-event Sentinel-1 pair."""
 
     if not features:
-        raise ValueError("No Sentinel-1 acquisitions were returned for the requested window")
+        raise ValueError(
+            "No Sentinel-1 acquisitions were returned for the requested window"
+        )
 
     event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
     if event_dt.tzinfo is None:
@@ -146,7 +154,7 @@ def select_before_after(
             "Catalog results must contain at least one acquisition before and after the event time"
         )
 
-    candidates: list[tuple[tuple[int, float], dict[str, Any], datetime, dict[str, Any], datetime]] = []
+    candidates = []
     for before_item, before_dt in before:
         for after_item, after_dt in after:
             candidates.append(
@@ -174,7 +182,9 @@ def select_before_after(
             "datetime": after_dt.isoformat(),
             "item": after_item,
         },
-        "gap_hours": round((after_dt - before_dt).total_seconds() / 3600, 2),
+        "gap_hours": round(
+            (after_dt - before_dt).total_seconds() / 3600, 2
+        ),
         "compatibility": {
             "polarization": _property(before_item, "s1:polarization"),
             "instrument_mode": _property(before_item, "sar:instrument_mode"),
@@ -204,6 +214,8 @@ def build_process_request(
 ) -> dict[str, Any]:
     if len(bbox) != 4:
         raise ValueError("bbox must contain [west, south, east, north]")
+    if not (-180 <= bbox[0] <= bbox[2] <= 180 and -90 <= bbox[1] <= bbox[3] <= 90):
+        raise ValueError("bbox coordinates are invalid")
     if width < 32 or height < 32 or width > 2048 or height > 2048:
         raise ValueError("width and height must be between 32 and 2048")
 
@@ -221,7 +233,8 @@ def build_process_request(
                     "type": COLLECTION,
                     "dataFilter": {
                         "timeRange": {"from": interval[0], "to": interval[1]},
-                        "acquisitionMode": "IW",\n                        "polarization": "DV",
+                        "acquisitionMode": "IW",
+                        "polarization": "DV",
                     },
                     "processing": {
                         "orthorectify": "true",
