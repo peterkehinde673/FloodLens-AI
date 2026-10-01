@@ -7,3 +7,5 @@ shapely
 networkx
 pydantic
 python-dotenv
+
+pytest
