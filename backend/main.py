@@ -12,7 +12,7 @@ from backend.geospatial.impact import affected_roads
 from backend.network.graph import remove_affected_edges, road_graph
 from backend.network.isolation import potentially_isolated
 
-app = FastAPI(title="FloodLens AI API", version="0.2.0")
+app = FastAPI(title="FloodLens AI API", version="0.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,6 +73,11 @@ def analyze(request: AnalyzeRequest):
     )
 
     flood_union = flood.to_crs(roads.crs).geometry.union_all()
+    flood_area_km2 = round(
+        flood.to_crs("EPSG:6933").geometry.union_all().area / 1_000_000,
+        4,
+    )
+
     affected_bridge_records = []
     for row in bridges.itertuples():
         if row.geometry.intersects(flood_union):
@@ -94,7 +99,7 @@ def analyze(request: AnalyzeRequest):
         "event_id": request.event_id,
         "status": "demo_analysis_complete",
         "message": "Deterministic demo analysis is running end-to-end. Live satellite ingestion and learned flood segmentation are next.",
-        "flood_area_km2": None,
+        "flood_area_km2": flood_area_km2,
         "affected_roads": json.loads(impacted.to_json())["features"],
         "affected_bridges": affected_bridge_records,
         "isolated_communities": isolated_ids,
