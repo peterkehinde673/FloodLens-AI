@@ -13,6 +13,7 @@ import {
 
 type Analysis = {
   status: string;
+  flood_area_km2: number | null;
   affected_roads: Array<{ properties?: { id?: string; status?: string; impact_ratio?: number } }>;
   affected_bridges: Array<{ id: string; name: string; status: string; reason: string }>;
   isolated_communities: string[];
@@ -56,7 +57,11 @@ export default function Home() {
       const data: Analysis = await response.json();
       setAnalysis(data);
       setStats([
-        { label: "Flood extent", value: "Demo", icon: CloudRain },
+        {
+          label: "Flood extent",
+          value: data.flood_area_km2 === null ? "Demo" : data.flood_area_km2.toFixed(2) + " km²",
+          icon: CloudRain,
+        },
         { label: "Affected roads", value: String(data.affected_roads.length), icon: Route },
         { label: "Potentially affected bridges", value: String(data.affected_bridges.length), icon: ShieldAlert },
         { label: "Potentially isolated communities", value: String(data.isolated_communities.length), icon: RadioTower },
@@ -96,43 +101,47 @@ export default function Home() {
 
         <div className="grid min-h-[620px] gap-5 lg:grid-cols-[1fr_360px]">
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0b1a25]">
-            <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(rgba(100,200,220,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100,200,220,.08) 1px, transparent 1px)", backgroundSize: "42px 42px" }} />
-            <div className="absolute left-6 top-6 rounded-xl border border-white/10 bg-[#071018]/90 px-4 py-3 backdrop-blur">
-              <p className="text-xs text-slate-400">EVENT</p><p className="font-medium">Synthetic connectivity demo</p>
+            <div className="absolute left-6 top-6 z-10 rounded-xl border border-white/10 bg-[#071018]/90 px-4 py-3 backdrop-blur">
+              <p className="text-xs text-slate-400">EVENT</p>
+              <p className="font-medium">Synthetic connectivity demo</p>
             </div>
 
-            <div className="absolute inset-0 flex items-center justify-center p-6">
+            <div className="absolute inset-0">
               {analysis ? (
-                <FloodMap flood={analysis.flood} roads={analysis.roads} communities={analysis.communities} bridges={analysis.bridges} isolated={isolated} />
-              ) : null}
-              {!analysis && <div className="w-full max-w-xl">
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
-                  <BrainCircuit />
-                </div>
-                <h2 className="text-center text-2xl font-semibold">Evidence before inference.</h2>
-                <p className="mx-auto mt-3 max-w-lg text-center text-sm leading-6 text-slate-400">
-                  FloodLens connects flood extent to road impact and then tests whether mapped communities still have a route to the safe network.
-                </p>
-
-                {analysis && (
-                  <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                    {analysis.community_analysis.map((item) => (
-                      <div key={item.community_id} className="rounded-xl border border-white/10 bg-black/25 p-4">
-                        <p className="text-xs text-slate-500">{item.community_id}</p>
-                        <p className="mt-1 font-medium">
-                          {item.potentially_isolated ? "Potentially isolated" : "Route remains"}
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-slate-400">{item.reason}</p>
-                      </div>
-                    ))}
+                <FloodMap
+                  flood={analysis.flood}
+                  roads={analysis.roads}
+                  communities={analysis.communities}
+                  bridges={analysis.bridges}
+                  isolated={isolated}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center p-6">
+                  <div className="w-full max-w-xl">
+                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+                      <BrainCircuit />
+                    </div>
+                    <h2 className="text-center text-2xl font-semibold">Evidence before inference.</h2>
+                    <p className="mx-auto mt-3 max-w-lg text-center text-sm leading-6 text-slate-400">
+                      FloodLens connects flood extent to road impact and then tests whether mapped communities still have a route to the safe network.
+                    </p>
                   </div>
-                )}
-              </div>}
+                </div>
+              )}
             </div>
 
-            <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-2">
-              {["Satellite", "Flood extent", "Affected roads", "Bridges", "Communities", "Potential isolation"].map(x => (
-                <span key={x} className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs text-slate-300">{x}</span>
+            <div className="absolute bottom-5 left-5 right-5 z-10 flex flex-wrap gap-2">
+              {[
+                ["Flood extent", "bg-sky-400"],
+                ["Affected roads", "bg-rose-400"],
+                ["Bridges", "bg-amber-400"],
+                ["Communities", "bg-slate-200"],
+                ["Potential isolation", "bg-red-500"],
+              ].map(([label, dot]) => (
+                <span key={label} className="flex items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
+                  <span className={"h-2 w-2 rounded-full " + dot} />
+                  {label}
+                </span>
               ))}
             </div>
           </div>
@@ -152,7 +161,11 @@ export default function Home() {
               {loading ? "Analyzing…" : "Analyze event"}
             </button>
 
-            {error && <p className="mt-3 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200">{error}</p>}
+            {error && (
+              <p className="mt-3 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200">
+                {error}
+              </p>
+            )}
 
             {analysis && (
               <div className="mt-5 space-y-3">
@@ -162,11 +175,15 @@ export default function Home() {
                 </div>
                 <div className="rounded-xl border border-white/10 p-4">
                   <p className="text-xs text-slate-500">ISOLATION EVIDENCE</p>
-                  <p className="mt-1 text-sm">{analysis.isolated_communities.join(", ") || "No community flagged"}</p>
+                  <p className="mt-1 text-sm">
+                    {analysis.isolated_communities.join(", ") || "No community flagged"}
+                  </p>
                 </div>
                 <div className="rounded-xl border border-white/10 p-4">
                   <p className="text-xs text-slate-500">NEXT</p>
-                  <p className="mt-1 text-sm">Replace the synthetic flood mask with a Sentinel-1 before/after result.</p>
+                  <p className="mt-1 text-sm">
+                    Replace the synthetic flood mask with a Sentinel-1 before/after result.
+                  </p>
                 </div>
               </div>
             )}
