@@ -75,3 +75,47 @@ def search_sentinel1(bbox: list[float], start: str, end: str, limit: int = 10) -
     )
     response.raise_for_status()
     return response.json()
+
+
+PROCESS_URL = "https://sh.dataspace.copernicus.eu/process/v1"
+
+
+def build_process_request(bbox: list[float], start: str, end: str, width: int = 512, height: int = 512) -> dict[str, Any]:
+    if len(bbox) != 4:
+        raise ValueError("bbox must contain [west, south, east, north]")
+    if width < 32 or height < 32 or width > 2048 or height > 2048:
+        raise ValueError("width and height must be between 32 and 2048")
+    return {
+        "input": {
+            "bounds": {
+                "bbox": bbox,
+                "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"},
+            },
+            "data": [{
+                "type": COLLECTION,
+                "dataFilter": {
+                    "timeRange": {"from": utc_interval(start, end).split("/")[0], "to": utc_interval(start, end).split("/")[1]},
+                    "acquisitionMode": "IW",
+                },
+                "processing": {"orthorectify": "true", "backCoeff": "GAMMA0_TERRAIN"},
+            }],
+        },
+        "output": {
+            "width": width,
+            "height": height,
+            "responses": [{"identifier": "default", "format": {"type": "image/tiff"}}],
+        },
+        "evalscript": """//VERSION=3\nfunction setup() {\n  return { input: [\"VV\", \"VH\"], output: { id: \"default\", bands: 2, sampleType: SampleType.FLOAT32 } }\n}\nfunction evaluatePixel(samples) { return [samples.VV, samples.VH] }\n""",
+    }
+
+
+def process_sentinel1(bbox: list[float], start: str, end: str, width: int = 512, height: int = 512) -> bytes:
+    request = build_process_request(bbox, start, end, width, height)
+    response = httpx.post(
+        PROCESS_URL,
+        json=request,
+        headers={"Authorization": f"Bearer {_access_token()}", "Accept": "image/tiff"},
+        timeout=120,
+    )
+    response.raise_for_status()
+    return response.content
