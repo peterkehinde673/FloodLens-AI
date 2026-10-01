@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import maplibregl, { GeoJSONSource } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 type Props = {
@@ -18,9 +18,13 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
   useEffect(() => {
     if (!container.current) return;
 
+    const mapStyle =
+      process.env.NEXT_PUBLIC_MAP_STYLE_URL ??
+      "https://tiles.openfreemap.org/styles/bright";
+
     const map = new maplibregl.Map({
       container: container.current,
-      style: "https://demotiles.maplibre.org/style.json",
+      style: mapStyle,
       center: [1, 1],
       zoom: 5.4,
       attributionControl: true,
@@ -29,13 +33,13 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", () => {
-      const isolatedFeatures = {
+      const isolatedFeatures: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: communities.features.filter((feature) => {
           const id = String(feature.properties?.id ?? "");
           return isolated.has(id);
         }),
-      } as GeoJSON.FeatureCollection;
+      };
 
       map.addSource("flood", { type: "geojson", data: flood });
       map.addSource("roads", { type: "geojson", data: roads });
@@ -99,14 +103,19 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
       map.on("click", "communities-points", (event) => {
         const feature = event.features?.[0];
         if (!feature) return;
+
         new maplibregl.Popup()
           .setLngLat(event.lngLat)
-          .setHTML("<strong>" + String(feature.properties?.name ?? "Community") + "</strong>")
+          .setText(String(feature.properties?.name ?? "Community"))
           .addTo(map);
       });
 
-      map.on("mouseenter", "communities-points", () => { map.getCanvas().style.cursor = "pointer"; });
-      map.on("mouseleave", "communities-points", () => { map.getCanvas().style.cursor = ""; });
+      map.on("mouseenter", "communities-points", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "communities-points", () => {
+        map.getCanvas().style.cursor = "";
+      });
     });
 
     return () => map.remove();
