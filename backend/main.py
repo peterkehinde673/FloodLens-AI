@@ -13,6 +13,7 @@ from rasterio.io import MemoryFile
 from shapely.geometry import shape
 
 from backend.analysis import analyze_flood_extent
+from backend.osm import fetch_osm_aoi
 from backend.satellite.sentinel1 import (
     process_scene,
     process_sentinel1,
@@ -289,6 +290,22 @@ def satellite_flood_mask(request: LiveAnalyzeRequest):
             status_code=502,
             detail=f"Flood mask generation failed: {exc}",
         ) from exc
+
+
+@app.post("/api/osm/aoi")
+def osm_aoi(request: SatelliteProcessRequest):
+    try:
+        roads, bridges, communities = fetch_osm_aoi(request.bbox)
+        return {
+            "status": "osm_aoi_complete",
+            "roads": json.loads(roads.to_json()),
+            "bridges": json.loads(bridges.to_json()),
+            "communities": json.loads(communities.to_json()),
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"OSM retrieval failed: {exc}") from exc
 
 
 @app.post("/api/satellite/live-analyze")
