@@ -1,3 +1,4 @@
+import type { FeatureCollection } from "geojson";
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -5,10 +6,10 @@ import { Map, NavigationControl, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 type Props = {
-  flood: GeoJSON.FeatureCollection;
-  roads: GeoJSON.FeatureCollection;
-  communities: GeoJSON.FeatureCollection;
-  bridges: GeoJSON.FeatureCollection;
+  flood: FeatureCollection;
+  roads: FeatureCollection;
+  communities: FeatureCollection;
+  bridges: FeatureCollection;
   isolated: Set<string>;
 };
 
@@ -39,7 +40,7 @@ export default function FloodMap({
     map.addControl(new NavigationControl(), "top-right");
 
     map.on("load", () => {
-      const isolatedFeatures: GeoJSON.FeatureCollection = {
+      const isolatedFeatures: FeatureCollection = {
         type: "FeatureCollection",
         features: communities.features.filter((feature) => {
           const id = String(feature.properties?.id ?? "");
