@@ -12,11 +12,7 @@ from shapely.geometry import shape
 
 from backend.analysis import analyze_flood_extent
 from backend.osm import fetch_osm_aoi
-from backend.satellite.sentinel1 import (
-    process_scene,
-    search_sentinel1,
-    select_before_after,
-)
+from backend.satellite.sentinel1 import process_scene, search_sentinel1, select_before_after
 from backend.vision.baseline import dual_polarization_flood_mask
 
 BBOX = [6.70, 7.75, 6.79, 7.85]
@@ -48,12 +44,8 @@ def main():
     print("Before:", pair["before"]["id"])
     print("After :", pair["after"]["id"])
 
-    before_content = process_scene(
-        BBOX, pair["before"]["datetime"], WIDTH, HEIGHT
-    )
-    after_content = process_scene(
-        BBOX, pair["after"]["datetime"], WIDTH, HEIGHT
-    )
+    before_content = process_scene(BBOX, pair["before"]["datetime"], WIDTH, HEIGHT)
+    after_content = process_scene(BBOX, pair["after"]["datetime"], WIDTH, HEIGHT)
 
     before, transform, crs = read_scene(before_content)
     after, _, _ = read_scene(after_content)
@@ -79,13 +71,8 @@ def main():
 
     raw_pixels = int(mask.sum())
 
-    mask = sieve(
-        mask.astype("uint8"),
-        size=MIN_PIXELS,
-        connectivity=8,
-    ).astype(bool)
+    mask = sieve(mask.astype("uint8"), size=MIN_PIXELS, connectivity=8).astype(bool)
     mask &= valid
-
     cleaned_pixels = int(mask.sum())
 
     profile = {
@@ -106,11 +93,7 @@ def main():
 
     features = [
         shape(geom)
-        for geom, value in shapes(
-            mask.astype("uint8"),
-            mask=mask,
-            transform=transform,
-        )
+        for geom, value in shapes(mask.astype("uint8"), mask=mask, transform=transform)
         if value == 1
     ]
 
@@ -119,9 +102,7 @@ def main():
         geometry=features,
         crs=crs,
     )
-
-    geojson_path = OUT / "flood_candidate_cleaned.geojson"
-    flood.to_file(geojson_path, driver="GeoJSON")
+    flood.to_file(OUT / "flood_candidate_cleaned.geojson", driver="GeoJSON")
 
     roads, bridges, communities = fetch_osm_aoi(BBOX)
 
@@ -135,8 +116,21 @@ def main():
     )
 
     affected_roads = impact["affected_roads"]
-    roads_geojson = OUT / "affected_roads.geojson"
-    affected_roads.to_file(roads_geojson, driver="GeoJSON")
+    affected_roads.to_file(OUT / "affected_roads.geojson", driver="GeoJSON")
+
+    # Persist the raw OSM layers used by the live analysis so the web demo can
+    # render the same evidence instead of falling back to synthetic data.
+    affected_bridge_ids = {
+        item["id"] for item in impact["affected_bridges"] if item.get("id")
+    }
+    bridges_for_web = bridges.copy()
+    bridges_for_web["status"] = bridges_for_web["id"].map(
+        lambda value: "potentially_affected"
+        if value in affected_bridge_ids
+        else "unaffected"
+    )
+    bridges_for_web.to_file(OUT / "bridges.geojson", driver="GeoJSON")
+    impact["communities"].to_file(OUT / "communities.geojson", driver="GeoJSON")
 
     flood_area_km2 = impact["flood_area_km2"]
 
@@ -145,6 +139,8 @@ def main():
         "aoi_bbox": BBOX,
         "before": pair["before"],
         "after": pair["after"],
+        "before_datetime": pair["before"]["datetime"],
+        "after_datetime": pair["after"]["datetime"],
         "gap_hours": pair["gap_hours"],
         "method": {
             "vv_threshold_db": VV_THRESHOLD_DB,
@@ -175,8 +171,7 @@ def main():
         },
     }
 
-    summary_path = OUT / "summary.json"
-    summary_path.write_text(json.dumps(summary, indent=2, default=str))
+    (OUT / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
 
     print(json.dumps(summary, indent=2, default=str))
     print("Artifacts:", OUT)
