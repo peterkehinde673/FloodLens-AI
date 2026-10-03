@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import { Map, NavigationControl, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 type Props = {
@@ -28,7 +28,7 @@ export default function FloodMap({
       process.env.NEXT_PUBLIC_MAP_STYLE_URL ??
       "https://tiles.openfreemap.org/styles/bright";
 
-    const map = new maplibregl.Map({
+    const map = new Map({
       container: container.current,
       style: mapStyle,
       center: [6.755, 7.795],
@@ -36,7 +36,7 @@ export default function FloodMap({
       attributionControl: true,
     });
 
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new NavigationControl(), "top-right");
 
     map.on("load", () => {
       const isolatedFeatures: GeoJSON.FeatureCollection = {
@@ -118,7 +118,7 @@ export default function FloodMap({
         const feature = event.features?.[0];
         if (!feature) return;
 
-        new maplibregl.Popup()
+        new Popup()
           .setLngLat(event.lngLat)
           .setText(String(feature.properties?.name ?? "Community"))
           .addTo(map);
