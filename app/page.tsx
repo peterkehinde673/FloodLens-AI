@@ -71,6 +71,9 @@ export default function Home() {
     useState<GeoJSON.FeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [explanation, setExplanation] = useState("");
+  const [explanationSource, setExplanationSource] = useState("");
+  const [explaining, setExplaining] = useState(false);
 
   const loadLiveEvent = useCallback(async () => {
     setLoading(true);
@@ -107,6 +110,55 @@ export default function Home() {
   useEffect(() => {
     void loadLiveEvent();
   }, [loadLiveEvent]);
+
+  const generateExplanation = useCallback(async () => {
+    if (!summary || !communities) return;
+
+    setExplaining(true);
+    try {
+      const response = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: summary.event,
+          before: new Date(summary.before_datetime).toLocaleDateString(),
+          after: new Date(summary.after_datetime).toLocaleDateString(),
+          gapDays: Math.round(summary.gap_hours / 24),
+          areaKm2: summary.area_km2,
+          rawPercent: summary.pixels.raw_percent,
+          cleanedPercent: summary.pixels.cleaned_percent,
+          affectedRoads: summary.osm.potentially_affected_roads,
+          affectedBridges: summary.osm.potentially_affected_bridges,
+          communities: communities.features.map((feature) => ({
+            name: String(feature.properties?.name ?? "Unnamed community"),
+            access_status: String(feature.properties?.access_status ?? ""),
+            isolation_reason: String(
+              feature.properties?.isolation_reason ?? "",
+            ),
+            reachable_safe_nodes: Number(
+              feature.properties?.reachable_safe_nodes ?? 0,
+            ),
+          })),
+          vvMean: summary.diagnostics.vv_mean_change_db,
+          vhMean: summary.diagnostics.vh_mean_change_db,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Explanation failed.");
+      setExplanation(payload.text || "");
+      setExplanationSource(payload.source || "FloodLens");
+    } catch (err) {
+      setExplanation(
+        err instanceof Error
+          ? err.message
+          : "Unable to generate the evidence brief.",
+      );
+      setExplanationSource("FloodLens");
+    } finally {
+      setExplaining(false);
+    }
+  }, [summary, communities]);
 
   const isolated = new Set<string>(
     communities?.features
@@ -265,6 +317,26 @@ export default function Home() {
             </button>
 
             {summary && (
+              <button
+                onClick={() => void generateExplanation()}
+                disabled={explaining}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 disabled:opacity-50"
+              >
+                <Activity size={15} className={explaining ? "animate-pulse" : ""} />
+                {explaining ? "Generating evidence brief…" : "Generate AI evidence brief"}
+              </button>
+
+              {explanation && (
+                <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                  <p className="text-xs font-semibold tracking-[0.16em] text-cyan-300">
+                    {explanationSource.toUpperCase()}
+                  </p>
+                  <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-300">
+                    {explanation}
+                  </p>
+                </div>
+              )}
+
               <div className="mt-5 space-y-3">
                 <div className="rounded-xl border border-white/10 p-4">
                   <p className="text-xs text-slate-500">
