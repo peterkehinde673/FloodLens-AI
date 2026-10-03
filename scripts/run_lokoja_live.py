@@ -11,6 +11,7 @@ from rasterio.io import MemoryFile
 from shapely.geometry import shape
 
 from backend.analysis import analyze_flood_extent
+from backend.network.graph import boundary_safe_nodes
 from backend.osm import fetch_osm_aoi
 from backend.satellite.sentinel1 import process_scene, search_sentinel1, select_before_after
 from backend.vision.baseline import dual_polarization_flood_mask
@@ -106,12 +107,18 @@ def main():
 
     roads, bridges, communities = fetch_osm_aoi(BBOX)
 
+    # Treat road endpoints near the AOI boundary as potential entry/exit
+    # points. They are graph destinations, not a claim that the real roads
+    # beyond the AOI are currently safe.
+    safe_nodes = boundary_safe_nodes(roads, BBOX, margin_m=500.0)
+    print("Potential boundary exit nodes:", len(safe_nodes))
+
     impact = analyze_flood_extent(
         flood,
         roads,
         communities,
         bridges,
-        safe_nodes=[],
+        safe_nodes=safe_nodes,
         road_threshold=0.25,
     )
 
@@ -164,6 +171,8 @@ def main():
                 (affected_roads["status"] == "potentially_affected").sum()
             ) if not affected_roads.empty else 0,
             "potentially_affected_bridges": len(impact["affected_bridges"]),
+            "potentially_isolated_communities": len(impact["isolated_communities"]),
+            "boundary_exit_nodes": len(impact["safe_nodes"]),
         },
         "diagnostics": {
             key: float(value) if isinstance(value, (np.floating, float)) else value
