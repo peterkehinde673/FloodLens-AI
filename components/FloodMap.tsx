@@ -12,7 +12,13 @@ type Props = {
   isolated: Set<string>;
 };
 
-export default function FloodMap({ flood, roads, communities, bridges, isolated }: Props) {
+export default function FloodMap({
+  flood,
+  roads,
+  communities,
+  bridges,
+  isolated,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -25,8 +31,8 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
     const map = new maplibregl.Map({
       container: container.current,
       style: mapStyle,
-      center: [1, 1],
-      zoom: 5.4,
+      center: [6.755, 7.795],
+      zoom: 11.2,
       attributionControl: true,
     });
 
@@ -58,7 +64,7 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
         id: "roads-line",
         type: "line",
         source: "roads",
-        paint: { "line-color": "#64748b", "line-width": 3 },
+        paint: { "line-color": "#64748b", "line-width": 2 },
       });
 
       map.addLayer({
@@ -66,14 +72,22 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
         type: "line",
         source: "roads",
         filter: ["==", ["get", "status"], "potentially_affected"],
-        paint: { "line-color": "#fb7185", "line-width": 6 },
+        paint: { "line-color": "#fb7185", "line-width": 5 },
       });
 
       map.addLayer({
         id: "bridges-line",
         type: "line",
         source: "bridges",
-        paint: { "line-color": "#f59e0b", "line-width": 7 },
+        paint: { "line-color": "#94a3b8", "line-width": 4 },
+      });
+
+      map.addLayer({
+        id: "bridges-affected",
+        type: "line",
+        source: "bridges",
+        filter: ["==", ["get", "status"], "potentially_affected"],
+        paint: { "line-color": "#f59e0b", "line-width": 8 },
       });
 
       map.addLayer({
@@ -116,6 +130,14 @@ export default function FloodMap({ flood, roads, communities, bridges, isolated 
       map.on("mouseleave", "communities-points", () => {
         map.getCanvas().style.cursor = "";
       });
+
+      map.fitBounds(
+        [
+          [6.70, 7.75],
+          [6.79, 7.85],
+        ],
+        { padding: 70, maxZoom: 12.5, duration: 0 },
+      );
     });
 
     return () => map.remove();
