@@ -1,88 +1,152 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import FloodMap from "@/components/FloodMap";
 import {
   Activity,
-  BrainCircuit,
   CloudRain,
   RadioTower,
+  RefreshCw,
   Route,
+  Satellite,
   ShieldAlert,
 } from "lucide-react";
 
-type Analysis = {
-  status: string;
-  flood_area_km2: number | null;
-  affected_roads: Array<{ properties?: { id?: string; status?: string; impact_ratio?: number } }>;
-  affected_bridges: Array<{ id: string; name: string; status: string; reason: string }>;
-  isolated_communities: string[];
-  community_analysis: Array<{ community_id: string; potentially_isolated: boolean; reason?: string }>;
-  flood: GeoJSON.FeatureCollection;
-  roads: GeoJSON.FeatureCollection;
-  communities: GeoJSON.FeatureCollection;
-  bridges: GeoJSON.FeatureCollection;
+type Summary = {
+  event: string;
+  aoi_bbox: number[];
+  gap_hours: number;
+  before_datetime: string;
+  after_datetime: string;
+  method: {
+    vv_threshold_db: number;
+    vh_threshold_db: number;
+    minimum_component_pixels: number;
+    note: string;
+  };
+  pixels: {
+    valid: number;
+    raw_candidate: number;
+    cleaned_candidate: number;
+    raw_percent: number;
+    cleaned_percent: number;
+  };
+  area_km2: number;
+  osm: {
+    roads: number;
+    bridges: number;
+    communities: number;
+    potentially_affected_roads: number;
+    potentially_affected_bridges: number;
+  };
+  diagnostics: {
+    vv_threshold_db: number;
+    vh_threshold_db: number;
+    vv_mean_change_db: number;
+    vh_mean_change_db: number;
+  };
 };
 
 const initialStats = [
-  { label: "Flood extent", value: "— km²", icon: CloudRain },
-  { label: "Affected roads", value: "—", icon: Route },
+  { label: "Candidate flood extent", value: "—", icon: CloudRain },
+  { label: "Potentially affected roads", value: "—", icon: Route },
   { label: "Potentially affected bridges", value: "—", icon: ShieldAlert },
-  { label: "Potentially isolated communities", value: "—", icon: RadioTower },
+  { label: "Mapped communities", value: "—", icon: RadioTower },
 ];
 
-export default function Home() {
-  const [stats, setStats] = useState(initialStats);
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const isolated = new Set(analysis?.isolated_communities ?? []);
+async function loadGeoJson(path: string) {
+  const response = await fetch(path, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Unable to load ${path}`);
+  return response.json() as Promise<GeoJSON.FeatureCollection>;
+}
 
-  async function analyzeEvent() {
+export default function Home() {
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [flood, setFlood] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [roads, setRoads] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [bridges, setBridges] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [communities, setCommunities] =
+    useState<GeoJSON.FeatureCollection | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadLiveEvent = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const response = await fetch(baseUrl + "/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event_id: "event-01" }),
-      });
-
-      if (!response.ok) {
-        throw new Error("FloodLens API returned an error.");
-      }
-
-      const data: Analysis = await response.json();
-      setAnalysis(data);
-      setStats([
-        {
-          label: "Flood extent",
-          value: data.flood_area_km2 === null ? "Demo" : data.flood_area_km2.toFixed(2) + " km²",
-          icon: CloudRain,
-        },
-        { label: "Affected roads", value: String(data.affected_roads.length), icon: Route },
-        { label: "Potentially affected bridges", value: String(data.affected_bridges.length), icon: ShieldAlert },
-        { label: "Potentially isolated communities", value: String(data.isolated_communities.length), icon: RadioTower },
+      const base = "/data/lokoja-2022/";
+      const [s, f, r, b, c] = await Promise.all([
+        fetch(base + "summary.json", { cache: "no-store" }).then(
+          (x) => x.json() as Promise<Summary>,
+        ),
+        loadGeoJson(base + "flood_candidate_cleaned.geojson"),
+        loadGeoJson(base + "affected_roads.geojson"),
+        loadGeoJson(base + "bridges.geojson"),
+        loadGeoJson(base + "communities.geojson"),
       ]);
+
+      setSummary(s);
+      setFlood(f);
+      setRoads(r);
+      setBridges(b);
+      setCommunities(c);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to reach FloodLens API.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load live Lokoja analysis.",
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadLiveEvent();
+  }, [loadLiveEvent]);
+
+  const isolated = new Set<string>();
+
+  const stats = summary
+    ? [
+        {
+          label: "Candidate flood extent",
+          value: `${summary.area_km2.toFixed(2)} km²`,
+          icon: CloudRain,
+        },
+        {
+          label: "Potentially affected roads",
+          value: String(summary.osm.potentially_affected_roads),
+          icon: Route,
+        },
+        {
+          label: "Potentially affected bridges",
+          value: String(summary.osm.potentially_affected_bridges),
+          icon: ShieldAlert,
+        },
+        {
+          label: "Mapped communities",
+          value: String(summary.osm.communities),
+          icon: RadioTower,
+        },
+      ]
+    : initialStats;
 
   return (
     <main className="min-h-screen bg-[#071018] text-slate-100">
       <header className="border-b border-white/10 bg-[#0a151f]/90 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.28em] text-cyan-300">FLOODLENS AI</p>
-            <h1 className="mt-1 text-xl font-semibold">Satellite Disaster Intelligence</h1>
+            <p className="text-xs font-semibold tracking-[0.28em] text-cyan-300">
+              FLOODLENS AI
+            </p>
+            <h1 className="mt-1 text-xl font-semibold">
+              Satellite Disaster Intelligence
+            </h1>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/5 px-3 py-1.5 text-xs text-cyan-200">
-            <Activity size={14} /> Demo mode · Analysis pipeline
+            <Satellite size={14} /> Live Sentinel-1 event
           </div>
         </div>
       </header>
@@ -90,9 +154,13 @@ export default function Home() {
       <section className="mx-auto max-w-[1500px] p-6">
         <div className="mb-5 grid gap-3 md:grid-cols-4">
           {stats.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+            <div
+              key={label}
+              className="rounded-2xl border border-white/10 bg-white/[0.035] p-4"
+            >
               <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs">{label}</span><Icon size={16} />
+                <span className="text-xs">{label}</span>
+                <Icon size={16} />
               </div>
               <p className="mt-3 text-2xl font-semibold">{value}</p>
             </div>
@@ -103,27 +171,35 @@ export default function Home() {
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0b1a25]">
             <div className="absolute left-6 top-6 z-10 rounded-xl border border-white/10 bg-[#071018]/90 px-4 py-3 backdrop-blur">
               <p className="text-xs text-slate-400">EVENT</p>
-              <p className="font-medium">Synthetic connectivity demo</p>
+              <p className="font-medium">
+                Lokoja, Kogi State · 2022 flood event
+              </p>
             </div>
 
             <div className="absolute inset-0">
-              {analysis ? (
+              {flood && roads && bridges && communities ? (
                 <FloodMap
-                  flood={analysis.flood}
-                  roads={analysis.roads}
-                  communities={analysis.communities}
-                  bridges={analysis.bridges}
+                  flood={flood}
+                  roads={roads}
+                  communities={communities}
+                  bridges={bridges}
                   isolated={isolated}
                 />
               ) : (
-                <div className="flex h-full items-center justify-center p-6">
-                  <div className="w-full max-w-xl">
-                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
-                      <BrainCircuit />
-                    </div>
-                    <h2 className="text-center text-2xl font-semibold">Evidence before inference.</h2>
-                    <p className="mx-auto mt-3 max-w-lg text-center text-sm leading-6 text-slate-400">
-                      FloodLens connects flood extent to road impact and then tests whether mapped communities still have a route to the safe network.
+                <div className="flex h-full items-center justify-center">
+                  <div className="text-center">
+                    <Satellite
+                      className="mx-auto text-cyan-300"
+                      size={44}
+                    />
+                    <p className="mt-4 text-lg font-semibold">
+                      {loading
+                        ? "Loading satellite evidence…"
+                        : "Live dataset unavailable"}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-400">
+                      {error ||
+                        "FloodLens is preparing the analysis map."}
                     </p>
                   </div>
                 </div>
@@ -132,14 +208,16 @@ export default function Home() {
 
             <div className="absolute bottom-5 left-5 right-5 z-10 flex flex-wrap gap-2">
               {[
-                ["Flood extent", "bg-sky-400"],
-                ["Affected roads", "bg-rose-400"],
+                ["Candidate flood extent", "bg-sky-400"],
+                ["Potentially affected roads", "bg-rose-400"],
                 ["Bridges", "bg-amber-400"],
                 ["Communities", "bg-slate-200"],
-                ["Potential isolation", "bg-red-500"],
               ].map(([label, dot]) => (
-                <span key={label} className="flex items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs text-slate-200 backdrop-blur">
-                  <span className={"h-2 w-2 rounded-full " + dot} />
+                <span
+                  key={label}
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs text-slate-200 backdrop-blur"
+                >
+                  <span className={`h-2 w-2 rounded-full ${dot}`} />
                   {label}
                 </span>
               ))}
@@ -147,42 +225,64 @@ export default function Home() {
           </div>
 
           <aside className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
-            <p className="text-xs font-semibold tracking-[0.2em] text-cyan-300">MISSION PANEL</p>
-            <h2 className="mt-2 text-xl font-semibold">Flood impact analysis</h2>
+            <p className="text-xs font-semibold tracking-[0.2em] text-cyan-300">
+              EVIDENCE PANEL
+            </p>
+            <h2 className="mt-2 text-xl font-semibold">
+              Flood impact analysis
+            </h2>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Run the deterministic event to verify the complete flood-to-road-to-isolation pipeline before live satellite processing.
+              Sentinel-1 VV/VH change identifies candidate flood/change areas,
+              then the result is intersected with OpenStreetMap infrastructure.
             </p>
 
             <button
-              onClick={analyzeEvent}
+              onClick={() => void loadLiveEvent()}
               disabled={loading}
-              className="mt-6 w-full rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 disabled:opacity-50"
             >
-              {loading ? "Analyzing…" : "Analyze event"}
+              <RefreshCw
+                size={15}
+                className={loading ? "animate-spin" : ""}
+              />
+              {loading ? "Loading…" : "Refresh live dataset"}
             </button>
 
-            {error && (
-              <p className="mt-3 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs leading-5 text-red-200">
-                {error}
-              </p>
-            )}
-
-            {analysis && (
+            {summary && (
               <div className="mt-5 space-y-3">
                 <div className="rounded-xl border border-white/10 p-4">
-                  <p className="text-xs text-slate-500">RESULT</p>
-                  <p className="mt-1 text-sm">{analysis.status}</p>
-                </div>
-                <div className="rounded-xl border border-white/10 p-4">
-                  <p className="text-xs text-slate-500">ISOLATION EVIDENCE</p>
+                  <p className="text-xs text-slate-500">
+                    SENTINEL-1 ACQUISITIONS
+                  </p>
                   <p className="mt-1 text-sm">
-                    {analysis.isolated_communities.join(", ") || "No community flagged"}
+                    Before ·{" "}
+                    {new Date(summary.before_datetime).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm">
+                    After ·{" "}
+                    {new Date(summary.after_datetime).toLocaleDateString()}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {(summary.gap_hours / 24).toFixed(0)}-day observation gap
                   </p>
                 </div>
+
                 <div className="rounded-xl border border-white/10 p-4">
-                  <p className="text-xs text-slate-500">NEXT</p>
+                  <p className="text-xs text-slate-500">CHANGE SIGNAL</p>
                   <p className="mt-1 text-sm">
-                    Replace the synthetic flood mask with a Sentinel-1 before/after result.
+                    VV mean: {summary.diagnostics.vv_mean_change_db.toFixed(2)} dB
+                  </p>
+                  <p className="text-sm">
+                    VH mean: {summary.diagnostics.vh_mean_change_db.toFixed(2)} dB
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                  <p className="text-xs text-amber-300">INTERPRETATION</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    This is a candidate flood/change extent, not a claim of
+                    confirmed structural damage. Connectivity/isolation
+                    inference is the next analysis layer.
                   </p>
                 </div>
               </div>
