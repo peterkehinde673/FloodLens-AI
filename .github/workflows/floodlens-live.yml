@@ -7,7 +7,7 @@ jobs:
   live-analysis:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -36,6 +36,25 @@ jobs:
           CDSE_CLIENT_SECRET: ${{ secrets.CDSE_CLIENT_SECRET }}
         run: |
           PYTHONPATH=. python scripts/run_lokoja_live.py
+
+      - name: Persist live dataset for the web demo
+        run: |
+          mkdir -p public/data/lokoja-2022
+          cp artifacts/lokoja-2022/summary.json public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/flood_candidate_cleaned.geojson public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/affected_roads.geojson public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/bridges.geojson public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/communities.geojson public/data/lokoja-2022/
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/lokoja-2022
+          if git diff --cached --quiet; then
+            echo "No live dataset changes to commit."
+          else
+            git commit -m "data: update Lokoja 2022 live analysis"
+            git push
+          fi
 
       - name: Upload FloodLens artifacts
         uses: actions/upload-artifact@v4
