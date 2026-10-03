@@ -38,6 +38,8 @@ type Summary = {
     communities: number;
     potentially_affected_roads: number;
     potentially_affected_bridges: number;
+    potentially_isolated_communities: number;
+    boundary_exit_nodes: number;
   };
   diagnostics: {
     vv_threshold_db: number;
@@ -106,7 +108,15 @@ export default function Home() {
     void loadLiveEvent();
   }, [loadLiveEvent]);
 
-  const isolated = new Set<string>();
+  const isolated = new Set<string>(
+    communities?.features
+      .filter(
+        (feature) =>
+          feature.properties?.access_status === "potentially_isolated",
+      )
+      .map((feature) => String(feature.properties?.id ?? ""))
+      .filter(Boolean) ?? [],
+  );
 
   const stats = summary
     ? [
@@ -130,6 +140,11 @@ export default function Home() {
           value: String(summary.osm.communities),
           icon: RadioTower,
         },
+        {
+          label: "Potentially isolated",
+          value: String(summary.osm.potentially_isolated_communities),
+          icon: Activity,
+        },
       ]
     : initialStats;
 
@@ -152,7 +167,7 @@ export default function Home() {
       </header>
 
       <section className="mx-auto max-w-[1500px] p-6">
-        <div className="mb-5 grid gap-3 md:grid-cols-4">
+        <div className="mb-5 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           {stats.map(({ label, value, icon: Icon }) => (
             <div
               key={label}
@@ -212,6 +227,7 @@ export default function Home() {
                 ["Potentially affected roads", "bg-rose-400"],
                 ["Bridges", "bg-amber-400"],
                 ["Communities", "bg-slate-200"],
+                ["Potentially isolated", "bg-red-500"],
               ].map(([label, dot]) => (
                 <span
                   key={label}
@@ -277,12 +293,26 @@ export default function Home() {
                   </p>
                 </div>
 
+                <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
+                  <p className="text-xs text-red-300">ACCESSIBILITY</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    {summary.osm.potentially_isolated_communities} of{" "}
+                    {summary.osm.communities} mapped communities are flagged
+                    as potentially isolated after removing potentially
+                    affected road edges. The graph uses{" "}
+                    {summary.osm.boundary_exit_nodes} AOI-boundary road exit
+                    nodes as potential destinations.
+                  </p>
+                </div>
+
                 <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
                   <p className="text-xs text-amber-300">INTERPRETATION</p>
                   <p className="mt-1 text-xs leading-5 text-slate-300">
-                    This is a candidate flood/change extent, not a claim of
-                    confirmed structural damage. Connectivity/isolation
-                    inference is the next analysis layer.
+                    Sentinel-1 VV/VH identifies candidate flood/change areas;
+                    satellite evidence alone does not confirm structural
+                    damage. Accessibility results are also potential findings
+                    limited by OSM completeness and the flood-classification
+                    threshold.
                   </p>
                 </div>
               </div>
