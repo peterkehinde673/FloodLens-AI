@@ -1,0 +1,43 @@
+name: FloodLens Live Lokoja Analysis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  live-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install geospatial dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Run real Sentinel-1 + OSM analysis
+        env:
+          CDSE_CLIENT_ID: ${{ secrets.CDSE_CLIENT_ID }}
+          CDSE_CLIENT_SECRET: ${{ secrets.CDSE_CLIENT_SECRET }}
+        run: |
+          PYTHONPATH=. python scripts/run_lokoja_live.py
+
+      - name: Upload FloodLens artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: floodlens-lokoja-2022
+          path: artifacts/lokoja-2022/
+          if-no-files-found: error
