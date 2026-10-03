@@ -317,7 +317,8 @@ export default function Home() {
             </button>
 
             {summary && (
-              <button
+              <>
+                <button
                 onClick={() => void generateExplanation()}
                 disabled={explaining}
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 disabled:opacity-50"
@@ -326,18 +327,18 @@ export default function Home() {
                 {explaining ? "Generating evidence brief…" : "Generate AI evidence brief"}
               </button>
 
-              {explanation && (
-                <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                {explanation && (
+                  <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
                   <p className="text-xs font-semibold tracking-[0.16em] text-cyan-300">
                     {explanationSource.toUpperCase()}
                   </p>
                   <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-300">
                     {explanation}
                   </p>
-                </div>
-              )}
+                  </div>
+                )}
 
-              <div className="mt-5 space-y-3">
+                <div className="mt-5 space-y-3">
                 <div className="rounded-xl border border-white/10 p-4">
                   <p className="text-xs text-slate-500">
                     SENTINEL-1 ACQUISITIONS
@@ -387,7 +388,8 @@ export default function Home() {
                     threshold.
                   </p>
                 </div>
-              </div>
+                </div>
+              </>
             )}
           </aside>
         </div>
