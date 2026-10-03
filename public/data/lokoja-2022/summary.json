@@ -384,7 +384,9 @@
     "bridges": 9,
     "communities": 4,
     "potentially_affected_roads": 60,
-    "potentially_affected_bridges": 2
+    "potentially_affected_bridges": 2,
+    "potentially_isolated_communities": 4,
+    "boundary_exit_nodes": 686
   },
   "diagnostics": {
     "vv_threshold_db": -3.0,
