@@ -9,4 +9,5 @@ pydantic
 python-dotenv
 httpx
 rtree
+scipy
 pytest
