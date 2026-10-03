@@ -34,9 +34,9 @@ def test_linear_flood_change_mask():
 
 def test_dual_polarization_requires_both_vv_and_vh_drop():
     before_vv = np.array([[1.0, 1.0]])
-    after_vv = np.array([[0.1, 0.5]])
+    after_vv = np.array([[0.1, 0.6]])
     before_vh = np.array([[1.0, 1.0]])
-    after_vh = np.array([[0.1, 0.5]])
+    after_vh = np.array([[0.1, 0.6]])
 
     result, diagnostics = dual_polarization_flood_mask(
         before_vv, after_vv, before_vh, after_vh
