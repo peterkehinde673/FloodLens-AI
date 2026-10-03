@@ -26,6 +26,8 @@ jobs:
           python -m pip install -r backend/requirements.txt
 
       - name: Run tests
+        env:
+          PYTHONPATH: backend
         run: pytest -q
 
       - name: Run real Sentinel-1 + OSM analysis
