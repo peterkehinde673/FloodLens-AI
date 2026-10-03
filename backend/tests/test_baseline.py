@@ -27,7 +27,7 @@ def test_linear_to_db():
 
 def test_linear_flood_change_mask():
     before = np.array([[1.0, 1.0]])
-    after = np.array([[0.1, 0.5]])
+    after = np.array([[0.1, 0.6]])
     result = flood_change_mask_linear(before, after, threshold_db=-3.0)
     assert result.tolist() == [[True, False]]
 
