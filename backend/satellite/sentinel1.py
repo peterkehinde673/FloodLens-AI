@@ -65,7 +65,12 @@ def _access_token() -> str:
         },
         timeout=30,
     )
-    response.raise_for_status()
+    if response.status_code >= 400:
+        detail = response.text.strip()
+        raise RuntimeError(
+            f"Copernicus OAuth token request failed with HTTP {response.status_code}: "
+            f"{detail[:500]}"
+        )
     payload = response.json()
     token = payload.get("access_token")
     if not token:
