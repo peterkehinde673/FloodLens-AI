@@ -1,0 +1,16 @@
+{
+"type": "FeatureCollection",
+"name": "bridges",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": "way/570337615", "osm_id": 570337615, "name": null, "road_id": "way/570337615", "bridge": "yes", "status": "potentially_affected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7299092, 7.7866209 ], [ 6.7297723, 7.7856417 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/570337616", "osm_id": 570337616, "name": null, "road_id": "way/570337616", "bridge": "yes", "status": "potentially_affected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7298971, 7.7856271 ], [ 6.7299333, 7.7858463 ], [ 6.7299977, 7.7862821 ], [ 6.730046, 7.7865905 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/595587777", "osm_id": 595587777, "name": null, "road_id": "way/595587777", "bridge": "yes", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7497506, 7.8440264 ], [ 6.7496268, 7.8439501 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/595587779", "osm_id": 595587779, "name": null, "road_id": "way/595587779", "bridge": "yes", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7495724, 7.8438604 ], [ 6.7496549, 7.8439149 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/853981020", "osm_id": 853981020, "name": null, "road_id": "way/853981020", "bridge": "yes", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7496549, 7.8439149 ], [ 6.749779, 7.8439959 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/853981021", "osm_id": 853981021, "name": null, "road_id": "way/853981021", "bridge": "yes", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7496268, 7.8439501 ], [ 6.7495536, 7.8438977 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/1123924276", "osm_id": 1123924276, "name": null, "road_id": null, "bridge": "bridge", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7469151, 7.8396522 ], [ 6.7469352, 7.8396722 ], [ 6.7468822, 7.8397366 ], [ 6.7470411, 7.8399133 ], [ 6.7470907, 7.8398495 ], [ 6.7471135, 7.8398701 ], [ 6.7470498, 7.8399472 ], [ 6.746848, 7.8397266 ], [ 6.7469151, 7.8396522 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/1433387877", "osm_id": 1433387877, "name": null, "road_id": "way/1433387877", "bridge": "yes", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.7267469, 7.7930281 ], [ 6.725837, 7.7927803 ] ] } },
+{ "type": "Feature", "properties": { "id": "way/1433387879", "osm_id": 1433387879, "name": null, "road_id": "way/1433387879", "bridge": "yes", "status": "unaffected" }, "geometry": { "type": "LineString", "coordinates": [ [ 6.725847, 7.7927092 ], [ 6.726773, 7.792961 ] ] } }
+]
+}
