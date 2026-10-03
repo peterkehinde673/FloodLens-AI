@@ -1,3 +1,4 @@
+import type { Feature, FeatureCollection } from "geojson";
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -59,16 +60,16 @@ const initialStats = [
 async function loadGeoJson(path: string) {
   const response = await fetch(path, { cache: "no-store" });
   if (!response.ok) throw new Error(`Unable to load ${path}`);
-  return response.json() as Promise<GeoJSON.FeatureCollection>;
+  return response.json() as Promise<FeatureCollection>;
 }
 
 export default function Home() {
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [flood, setFlood] = useState<GeoJSON.FeatureCollection | null>(null);
-  const [roads, setRoads] = useState<GeoJSON.FeatureCollection | null>(null);
-  const [bridges, setBridges] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [flood, setFlood] = useState<FeatureCollection | null>(null);
+  const [roads, setRoads] = useState<FeatureCollection | null>(null);
+  const [bridges, setBridges] = useState<FeatureCollection | null>(null);
   const [communities, setCommunities] =
-    useState<GeoJSON.FeatureCollection | null>(null);
+    useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [explanation, setExplanation] = useState("");
@@ -129,7 +130,7 @@ export default function Home() {
           cleanedPercent: summary.pixels.cleaned_percent,
           affectedRoads: summary.osm.potentially_affected_roads,
           affectedBridges: summary.osm.potentially_affected_bridges,
-          communities: communities.features.map((feature) => ({
+          communities: communities.features.map((feature: Feature) => ({
             name: String(feature.properties?.name ?? "Unnamed community"),
             access_status: String(feature.properties?.access_status ?? ""),
             isolation_reason: String(
@@ -163,10 +164,10 @@ export default function Home() {
   const isolated = new Set<string>(
     communities?.features
       .filter(
-        (feature) =>
+        (feature: Feature) =>
           feature.properties?.access_status === "potentially_isolated",
       )
-      .map((feature) => String(feature.properties?.id ?? ""))
+      .map((feature: Feature) => String(feature.properties?.id ?? ""))
       .filter(Boolean) ?? [],
   );
 
