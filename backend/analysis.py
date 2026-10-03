@@ -13,6 +13,7 @@ def _nearest_road_node(communities, roads):
     if communities.empty or roads.empty:
         result = communities.copy()
         result["node"] = None
+        result["distance_m"] = None
         return result
 
     endpoints = []
@@ -64,9 +65,6 @@ def analyze_flood_extent(
         if row.node is not None
     ]
 
-    # Isolation is only meaningful when the caller explicitly defines a safe
-    # network. An empty safe-node set must never classify every community as
-    # isolated.
     isolation = (
         potentially_isolated(
             post_flood_graph,
@@ -75,6 +73,29 @@ def analyze_flood_extent(
         )
         if safe_nodes
         else []
+    )
+
+    isolation_by_id = {item["community_id"]: item for item in isolation}
+    communities = communities.copy()
+    communities["access_status"] = communities["id"].map(
+        lambda value: (
+            "potentially_isolated"
+            if isolation_by_id.get(str(value), {}).get("potentially_isolated")
+            else "route_to_boundary"
+            if str(value) in isolation_by_id
+            else "unresolved"
+        )
+    )
+    communities["isolation_reason"] = communities["id"].map(
+        lambda value: isolation_by_id.get(str(value), {}).get(
+            "reason",
+            "community could not be connected to the mapped road graph",
+        )
+    )
+    communities["reachable_safe_nodes"] = communities["id"].map(
+        lambda value: len(
+            isolation_by_id.get(str(value), {}).get("reachable_safe_nodes", [])
+        )
     )
 
     flood_area_km2 = round(
@@ -108,4 +129,5 @@ def analyze_flood_extent(
         ],
         "community_analysis": isolation,
         "communities": communities,
+        "safe_nodes": safe_nodes,
     }
