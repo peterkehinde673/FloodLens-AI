@@ -235,7 +235,33 @@ export default function Home() {
           ))}
         </div>
 
-        {summary && (\n          <section className="mb-5 rounded-3xl border border-white/10 bg-white/[0.035] p-5">\n            <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">\n              <div>\n                <p className="text-xs font-semibold tracking-[0.2em] text-cyan-300">SATELLITE EVIDENCE</p>\n                <h2 className="mt-1 text-lg font-semibold">Before → after → detected change</h2>\n                <p className="mt-1 text-xs text-slate-500">Sentinel-1A VV intensity previews at the same 512 × 512 processing grid.</p>\n              </div>\n              <span className="text-xs text-slate-500">24-day observation gap · orbit 30</span>\n            </div>\n            <div className="mt-4 grid gap-3 md:grid-cols-3">\n              {[\n                ["Before · 19 Sep 2022", "sentinel_before_vv.png"],\n                ["After · 13 Oct 2022", "sentinel_after_vv.png"],\n                ["VV change signal", "sentinel_vv_change.png"],\n              ].map(([label, file]) => (\n                <div key={file} className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">\n                  <img src={"/data/lokoja-2022/" + file} alt={label} className="aspect-square w-full object-cover" />\n                  <div className="border-t border-white/10 px-3 py-2 text-xs text-slate-300">{label}</div>\n                </div>\n              ))}\n            </div>\n            <p className="mt-3 text-[11px] leading-5 text-slate-500">The change panel is a normalized radar-backscatter view. Lower VV backscatter contributes to the candidate-change mask; it is not an optical photograph and does not by itself prove flooding or structural damage.</p>\n          </section>\n        )}\n\n        <div className="grid min-h-[620px] gap-5 lg:grid-cols-[1fr_360px]">
+        {summary && (
+          <section className="mb-5 rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+            <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.2em] text-cyan-300">SATELLITE EVIDENCE</p>
+                <h2 className="mt-1 text-lg font-semibold">Before → after → detected change</h2>
+                <p className="mt-1 text-xs text-slate-500">Sentinel-1A VV intensity previews at the same 512 × 512 processing grid.</p>
+              </div>
+              <span className="text-xs text-slate-500">24-day observation gap · orbit 30</span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                ["Before · 19 Sep 2022", "sentinel_before_vv.png"],
+                ["After · 13 Oct 2022", "sentinel_after_vv.png"],
+                ["VV change signal", "sentinel_vv_change.png"],
+              ].map(([label, file]) => (
+                <div key={file} className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                  <img src={"/data/lokoja-2022/" + file} alt={label} className="aspect-square w-full object-cover" />
+                  <div className="border-t border-white/10 px-3 py-2 text-xs text-slate-300">{label}</div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[11px] leading-5 text-slate-500">The change panel is a normalized radar-backscatter view. Lower VV backscatter contributes to the candidate-change mask; it is not an optical photograph and does not by itself prove flooding or structural damage.</p>
+          </section>
+        )}
+
+        <div className="grid min-h-[620px] gap-5 lg:grid-cols-[1fr_360px]">
           <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0b1a25]">
             <div className="absolute left-6 top-6 z-10 rounded-xl border border-white/10 bg-[#071018]/90 px-4 py-3 backdrop-blur">
               <p className="text-xs text-slate-400">EVENT</p>
