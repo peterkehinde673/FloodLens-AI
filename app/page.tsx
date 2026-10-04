@@ -54,7 +54,7 @@ const initialStats = [
   { label: "Candidate flood extent", value: "—", icon: CloudRain },
   { label: "Potentially affected roads", value: "—", icon: Route },
   { label: "Potentially affected bridges", value: "—", icon: ShieldAlert },
-  { label: "Mapped communities", value: "—", icon: RadioTower },
+  { label: "Mapped OSM places", value: "—", icon: RadioTower },
 ];
 
 async function loadGeoJson(path: string) {
@@ -194,7 +194,7 @@ export default function Home() {
           icon: RadioTower,
         },
         {
-          label: "Potentially isolated",
+          label: "Potentially isolated places",
           value: String(summary.osm.potentially_isolated_communities),
           icon: Activity,
         },
@@ -390,7 +390,7 @@ export default function Home() {
                   <p className="text-xs text-red-300">ACCESSIBILITY</p>
                   <p className="mt-1 text-xs leading-5 text-slate-300">
                     {summary.osm.potentially_isolated_communities} of{" "}
-                    {summary.osm.communities} mapped communities are flagged
+                    {summary.osm.communities} mapped OSM places are flagged
                     as potentially isolated after removing potentially
                     affected road edges. The graph uses{" "}
                     {summary.osm.boundary_exit_nodes} AOI-boundary road exit
