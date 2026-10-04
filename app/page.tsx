@@ -1,3 +1,5 @@
+"use client";
+
 import type { Feature, FeatureCollection } from "geojson";
 "use client";
 
