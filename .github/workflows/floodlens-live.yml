@@ -1,4 +1,5 @@
 name: FloodLens Live Lokoja Analysis
+# Keep the live evidence dataset synchronized with production.
 
 on:
   workflow_dispatch:
