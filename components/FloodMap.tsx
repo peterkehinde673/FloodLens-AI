@@ -34,7 +34,6 @@ export default function FloodMap({
       style: mapStyle,
       center: [6.755, 7.795],
       zoom: 11.2,
-      attributionControl: true,
     });
 
     map.addControl(new NavigationControl(), "top-right");
