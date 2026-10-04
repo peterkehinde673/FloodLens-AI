@@ -16,13 +16,22 @@ def _nearest_road_node(communities, roads):
         result["distance_m"] = None
         return result
 
-    endpoints = []
+    nodes_with_geometry = []
     for row in roads.itertuples():
-        endpoints.append((row.u, Point(row.geometry.coords[0])))
-        endpoints.append((row.v, Point(row.geometry.coords[-1])))
+        sequence = getattr(row, "node_sequence", None)
+        coords = list(row.geometry.coords)
+        if sequence is None:
+            sequence = [getattr(row, "u", None), getattr(row, "v", None)]
+        if len(sequence) != len(coords):
+            continue
+        nodes_with_geometry.extend(
+            (node, Point(coord))
+            for node, coord in zip(sequence, coords)
+            if node is not None
+        )
 
     nodes = gpd.GeoDataFrame(
-        [{"node": node, "geometry": point} for node, point in endpoints],
+        [{"node": node, "geometry": point} for node, point in nodes_with_geometry],
         geometry="geometry",
         crs=roads.crs,
     ).drop_duplicates(subset=["node"])
