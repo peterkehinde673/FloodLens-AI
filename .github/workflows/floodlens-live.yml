@@ -2,6 +2,12 @@ name: FloodLens Live Lokoja Analysis
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/**"
+      - "scripts/run_lokoja_live.py"
+      - ".github/workflows/floodlens-live.yml"
 
 jobs:
   live-analysis:
