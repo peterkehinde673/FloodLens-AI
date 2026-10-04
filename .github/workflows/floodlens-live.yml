@@ -51,6 +51,9 @@ jobs:
           cp artifacts/lokoja-2022/affected_roads.geojson public/data/lokoja-2022/
           cp artifacts/lokoja-2022/bridges.geojson public/data/lokoja-2022/
           cp artifacts/lokoja-2022/communities.geojson public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/sentinel_before_vv.png public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/sentinel_after_vv.png public/data/lokoja-2022/
+          cp artifacts/lokoja-2022/sentinel_vv_change.png public/data/lokoja-2022/
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
