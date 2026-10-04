@@ -380,7 +380,7 @@
   },
   "area_km2": 10.1126,
   "osm": {
-    "roads": 2021,
+    "roads": 2039,
     "bridges": 9,
     "communities": 4,
     "potentially_affected_roads": 60,
@@ -392,6 +392,6 @@
     "vv_threshold_db": -3.0,
     "vh_threshold_db": -2.0,
     "vv_mean_change_db": -2.257706880569458,
-    "vh_mean_change_db": -1.5418455600738525
+    "vh_mean_change_db": -1.5418457984924316
   }
 }
