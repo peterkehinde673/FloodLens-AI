@@ -377,6 +377,39 @@ export default function Home() {
                     {summary.osm.boundary_exit_nodes} AOI-boundary road exit
                     nodes as potential destinations.
                   </p>
+                  {communities && (
+                    <div className="mt-3 space-y-2">
+                      {communities.features.map((feature: Feature) => {
+                        const name = String(
+                          feature.properties?.name ?? "Unnamed community",
+                        );
+                        const isolatedCommunity =
+                          feature.properties?.access_status ===
+                          "potentially_isolated";
+                        return (
+                          <div
+                            key={String(feature.properties?.id ?? name)}
+                            className="flex items-center justify-between rounded-lg border border-white/10 bg-black/10 px-3 py-2"
+                          >
+                            <span className="text-xs text-slate-200">
+                              {name}
+                            </span>
+                            <span
+                              className={
+                                isolatedCommunity
+                                  ? "text-[10px] font-semibold uppercase tracking-wide text-red-300"
+                                  : "text-[10px] font-semibold uppercase tracking-wide text-emerald-300"
+                              }
+                            >
+                              {isolatedCommunity
+                                ? "Potentially isolated"
+                                : "Route remains"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
