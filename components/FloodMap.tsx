@@ -1,8 +1,6 @@
 "use client";
 
 import type { FeatureCollection } from "geojson";
-"use client";
-
 import { useEffect, useRef } from "react";
 import { Map, NavigationControl, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
