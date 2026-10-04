@@ -355,13 +355,50 @@ export default function Home() {
               </button>
 
                 {explanation && (
-                  <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-                  <p className="text-xs font-semibold tracking-[0.16em] text-cyan-300">
-                    {explanationSource.toUpperCase()}
-                  </p>
-                  <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-300">
-                    {explanation}
-                  </p>
+                  <div className="mt-5 space-y-3">
+                    <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold tracking-[0.16em] text-cyan-300">
+                            DISASTER INTELLIGENCE BRIEF
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-100">
+                            Evidence-backed operational summary
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
+                          {explanationSource}
+                        </span>
+                      </div>
+                      <p className="mt-3 whitespace-pre-line text-xs leading-6 text-slate-300">
+                        {explanation}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-black/10 p-4">
+                      <p className="text-xs font-semibold tracking-[0.16em] text-slate-400">
+                        EVIDENCE CHAIN
+                      </p>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {[
+                          ["01", "Sentinel-1A", "Before / after SAR observations"],
+                          ["02", "VV + VH change", "Dual-polarization candidate signal"],
+                          ["03", "Impact overlay", "Roads + bridges intersecting the mask"],
+                          ["04", "Network analysis", "Potential access loss from affected edges"],
+                        ].map(([step, title, detail]) => (
+                          <div
+                            key={step}
+                            className="rounded-lg border border-white/10 bg-white/[0.025] p-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-cyan-300">{step}</span>
+                              <span className="text-xs font-semibold text-slate-200">{title}</span>
+                            </div>
+                            <p className="mt-1 text-[11px] leading-5 text-slate-500">{detail}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
 
