@@ -365,6 +365,25 @@ export default function Home() {
                   <p className="text-sm">
                     VH mean: {summary.diagnostics.vh_mean_change_db.toFixed(2)} dB
                   </p>
+                  <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                    Dual-polarization threshold: VV {summary.method.vv_threshold_db} dB · VH {summary.method.vh_threshold_db} dB
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                  <p className="text-xs text-cyan-300">EVIDENCE PROVENANCE</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    Sentinel-1A · IW · VV/VH · relative orbit 30
+                  </p>
+                  <p className="text-[11px] leading-5 text-slate-500">
+                    Before: S1A_IW_GRDH_1SDV_20220919T174606
+                  </p>
+                  <p className="text-[11px] leading-5 text-slate-500">
+                    After: S1A_IW_GRDH_1SDV_20221013T174607
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                    10 m processing grid · {summary.pixels.valid.toLocaleString()} valid pixels
+                  </p>
                 </div>
 
                 <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
