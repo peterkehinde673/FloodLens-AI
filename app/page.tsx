@@ -1,8 +1,6 @@
 "use client";
 
 import type { Feature, FeatureCollection } from "geojson";
-"use client";
-
 import { useCallback, useEffect, useState } from "react";
 import FloodMap from "@/components/FloodMap";
 import {
