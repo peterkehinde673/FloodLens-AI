@@ -70,6 +70,28 @@ def main():
         valid_mask=valid,
     )
 
+    # Create lightweight visual evidence layers for the web demo. These are
+    # normalized Sentinel-1 VV intensity/change views, not optical imagery.
+    def write_preview(path: Path, array: np.ndarray, *, low: float, high: float):
+        scaled = np.clip((array - low) / (high - low), 0, 1)
+        image = (scaled * 255).astype("uint8")
+        preview_profile = {
+            "driver": "PNG",
+            "height": image.shape[0],
+            "width": image.shape[1],
+            "count": 1,
+            "dtype": "uint8",
+        }
+        with rasterio.open(path, "w", **preview_profile) as dst:
+            dst.write(image, 1)
+
+    before_vv_db = np.where(before[0] > 0, 10 * np.log10(np.maximum(before[0], 1e-6)), np.nan)
+    after_vv_db = np.where(after[0] > 0, 10 * np.log10(np.maximum(after[0], 1e-6)), np.nan)
+    vv_change_db = after_vv_db - before_vv_db
+    write_preview(OUT / "sentinel_before_vv.png", np.nan_to_num(before_vv_db, nan=-25.0), low=-25.0, high=5.0)
+    write_preview(OUT / "sentinel_after_vv.png", np.nan_to_num(after_vv_db, nan=-25.0), low=-25.0, high=5.0)
+    write_preview(OUT / "sentinel_vv_change.png", np.nan_to_num(vv_change_db, nan=0.0), low=-8.0, high=4.0)
+
     raw_pixels = int(mask.sum())
 
     mask = sieve(mask.astype("uint8"), size=MIN_PIXELS, connectivity=8).astype(bool)
