@@ -8,9 +8,6 @@ import geopandas as gpd
 import httpx
 from shapely.geometry import LineString, Point
 
-# Public Overpass instances can become temporarily overloaded. Keep several
-# documented global instances so a transient 502/503/504 does not kill the
-# entire live analysis.
 OVERPASS_URLS = (
     "https://overpass.private.coffee/api/interpreter",
     "https://z.overpass-api.de/api/interpreter",
@@ -91,8 +88,6 @@ def _request_overpass(
                     break
 
                 except httpx.HTTPStatusError as exc:
-                    # Non-transient errors (for example malformed queries)
-                    # should fail immediately rather than masking the bug.
                     if exc.response.status_code not in transient_statuses:
                         raise
                     last_error = exc
@@ -123,6 +118,7 @@ def fetch_osm_aoi(bbox: list[float], *, timeout: float = 90):
             and len(geometry) >= 2
         ):
             coords = [(p["lon"], p["lat"]) for p in geometry]
+            node_sequence = element.get("nodes", [])
             roads.append(
                 {
                     "id": eid,
@@ -130,8 +126,9 @@ def fetch_osm_aoi(bbox: list[float], *, timeout: float = 90):
                     "name": tags.get("name"),
                     "highway": tags.get("highway"),
                     "bridge": tags.get("bridge"),
-                    "u": element.get("nodes", [None])[0],
-                    "v": element.get("nodes", [None])[-1],
+                    "u": node_sequence[0] if node_sequence else None,
+                    "v": node_sequence[-1] if node_sequence else None,
+                    "node_sequence": node_sequence,
                     "geometry": LineString(coords),
                 }
             )
